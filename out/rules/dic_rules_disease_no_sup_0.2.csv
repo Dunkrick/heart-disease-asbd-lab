@@ -1,0 +1,3 @@
+antecedent,consequent,support,confidence,lift
+"exang=no,oldpeak=0",disease=no,0.246187363834,0.740983606557,1.65908036785
+thalach=high,disease=no,0.213507625272,0.710144927536,1.59003181336

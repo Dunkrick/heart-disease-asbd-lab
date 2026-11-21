@@ -1,0 +1,4 @@
+antecedent,consequent,support,confidence,lift
+exang=yes,disease=yes,0.306100217865,0.83630952381,1.51128374578
+"cp=asymptomatic,sex=M",disease=yes,0.384531590414,0.828638497653,1.4974215371
+cp=asymptomatic,disease=yes,0.427015250545,0.790322580645,1.42818135636

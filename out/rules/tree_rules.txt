@@ -1,0 +1,8 @@
+IF cp!=asymptomatic AND age <= 55.50 AND exang=yes THEN class=1
+IF cp!=asymptomatic AND age <= 55.50 AND exang=no THEN class=0
+IF cp!=asymptomatic AND age > 55.50 AND sex=female THEN class=0
+IF cp!=asymptomatic AND age > 55.50 AND sex=male THEN class=1
+IF cp=asymptomatic AND oldpeak <= 0.45 AND age <= 53.50 THEN class=0
+IF cp=asymptomatic AND oldpeak <= 0.45 AND age > 53.50 THEN class=1
+IF cp=asymptomatic AND oldpeak > 0.45 AND thalach <= 170.50 THEN class=1
+IF cp=asymptomatic AND oldpeak > 0.45 AND thalach > 170.50 THEN class=0

@@ -1,0 +1,3 @@
+startup_seconds=3.818174
+master=local[*]
+shuffle_partitions=8

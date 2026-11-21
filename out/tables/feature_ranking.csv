@@ -1,0 +1,12 @@
+feature,type,stat,p,MI,effect_size,tier,n_used,effect_size_observed_only,n_observed,keep/weak
+age,numeric,point_biserial_r=0.282039,3.0079532e-18,0.046076871,0.28203851,moderate,918,,,keep
+trestbps,numeric,point_biserial_r=0.109108,0.00092901128,0.008256215,0.1091077,weak,918,0.11470457,858,weak
+chol,numeric,point_biserial_r=0.0905974,0.0060165669,0.019254301,0.090597398,weak,918,0.1191231,717,weak
+thalach,numeric,point_biserial_r=-0.380738,4.8631583e-33,0.075186833,0.38073821,strong,918,0.39337085,863,keep
+oldpeak,numeric,point_biserial_r=0.366618,1.3899282e-30,0.081946026,0.36661776,strong,918,0.38610616,856,keep
+sex,categorical,chi2=85.6463;Cramers_V=0.305445,2.1518039e-20,0.047477068,0.30544492,strong,918,,,keep
+cp,categorical,chi2=268.067;Cramers_V=0.540382,8.0837284e-58,0.15598837,0.54038157,strong,918,,,keep
+fbs,categorical,chi2=10.7302;Cramers_V=0.108114,0.0010540106,0.0059959635,0.10811416,weak,918,0.14272481,828,weak
+restecg,categorical,chi2=10.9315;Cramers_V=0.109123,0.0042292328,0.0060447688,0.10912341,weak,918,0.11062174,916,weak
+exang,categorical,chi2=171.658;Cramers_V=0.432424,3.2148473e-39,0.10030447,0.43242427,strong,918,0.46242208,863,keep
+slope,categorical,chi2=142.157;Cramers_V=0.393516,1.2955286e-30,0.080409605,0.39351571,strong,918,,,keep
