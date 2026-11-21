@@ -1,4 +1,11 @@
 /Lectures
+Lectures/
 /heart+disease
 temp.txt
+submission.zip
+__pycache__/
+spark-warehouse/
+metastore_db/
+derby.log
+*.pyc
 .DS_Store

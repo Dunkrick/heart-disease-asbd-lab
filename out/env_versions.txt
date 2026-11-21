@@ -1,0 +1,12 @@
+python: 3.13.5
+numpy: 1.26.4
+pandas: 2.2.0
+scipy: 1.15.3
+sklearn: 1.4.0
+matplotlib: 3.10.0
+seaborn: 0.13.2
+mlxtend: 0.23.4
+pyspark: 4.2.0
+openjdk version "17.0.21.0.2" 2026-10-22
+OpenJDK Runtime Environment Homebrew (build 17.0.21.0.2+0)
+OpenJDK 64-Bit Server VM Homebrew (build 17.0.21.0.2+0, mixed mode, sharing)

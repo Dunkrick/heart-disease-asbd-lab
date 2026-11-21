@@ -1,0 +1,11 @@
+itemset,support,equal_support_closed_superset,superset_support
+"age=45-54,cp=atypical_angina,sex=F",0.029,"age=45-54,cp=atypical_angina,disease=no,sex=F",0.029
+"age=45-54,cp=atypical_angina,thalach=middle",0.023,"age=45-54,cp=atypical_angina,disease=no,thalach=middle",0.023
+"age=55-64,exang=yes,slope=downsloping",0.028,"age=55-64,disease=yes,exang=yes,slope=downsloping",0.028
+"age=65+,disease=yes,oldpeak=>=2",0.023,"age=65+,disease=yes,oldpeak=>=2,sex=M",0.023
+"age=65+,disease=yes,thalach=middle",0.032,"age=65+,disease=yes,sex=M,thalach=middle",0.032
+"age=<45,cp=atypical_angina,oldpeak=0",0.054,"age=<45,cp=atypical_angina,exang=no,oldpeak=0",0.054
+"age=<45,cp=non_anginal_pain,exang=no",0.040,"age=<45,cp=non_anginal_pain,disease=no,exang=no",0.040
+"age=<45,cp=non_anginal_pain,thalach=high",0.034,"age=<45,cp=non_anginal_pain,disease=no,thalach=high",0.034
+"cp=non_anginal_pain,disease=yes,oldpeak=>=2",0.021,"cp=non_anginal_pain,disease=yes,oldpeak=>=2,sex=M",0.021
+"disease=yes,slope=upsloping,thalach=middle",0.021,"disease=yes,sex=M,slope=upsloping,thalach=middle",0.021

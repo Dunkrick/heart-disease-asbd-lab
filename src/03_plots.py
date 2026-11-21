@@ -569,8 +569,13 @@ def make_stem_text(values):
     for value in values:
         age = int(value)
         stems[age // 10].append(age % 10)
-    return "Stem | Leaves\n" + "\n".join(f"{stem:>2}   | {' '.join(map(str, sorted(leaves)))}"
-                                           for stem, leaves in sorted(stems.items()))
+    lines = ["Stem | Leaves"]
+    for stem, leaves in sorted(stems.items()):
+        ordered = sorted(leaves)
+        for offset in range(0, len(ordered), 14):
+            label = f"{stem:>2}" if offset == 0 else "  "
+            lines.append(f"{label}   | {' '.join(map(str, ordered[offset:offset + 14]))}")
+    return "\n".join(lines)
 
 
 def build_matplotlib_figures():
@@ -642,15 +647,16 @@ def build_matplotlib_figures():
     # p06 three numeric boxplot panels.
     fig, axes_array = plt.subplots(1, 3, figsize=(9, 4.5))
     for ax, column in zip(axes_array, ["thalach", "oldpeak", "age"]):
-        sns.boxplot(data=d, x="disease_label", y=column, order=["No disease", "Disease"], palette=palette, ax=ax)
+        sns.boxplot(data=d, x="disease_label", y=column, hue="disease_label", hue_order=["No disease", "Disease"],
+                    order=["No disease", "Disease"], palette=palette, legend=False, ax=ax)
         ax.set(xlabel="Disease status", ylabel=short.get(column, column)); plot_style_axis(ax, numeric_x=False)
     fig.suptitle("Numeric features by disease status"); save_matplotlib(fig, "p06_boxplots_by_num_bin.png")
 
     # p07 ordered categorical violin plot with ticks centered at category centers.
     fig, ax = plt.subplots(figsize=(6.5, 4.5))
-    order = [cp_names[level] for level in (1, 2, 3, 4)]
-    sns.violinplot(data=d, x="cp_label", y="thalach", order=order, inner="quartile", cut=0, color="#59A6C5", ax=ax)
-    ax.set_xticks(range(4), order); ax.set(xlabel="Chest-pain category", ylabel=short["thalach"])
+    cp_order = [cp_names[level] for level in (1, 2, 3, 4)]
+    sns.violinplot(data=d, x="cp_label", y="thalach", order=cp_order, inner="quartile", cut=0, color="#59A6C5", ax=ax)
+    ax.set_xticks(range(4), cp_order); ax.set(xlabel="Chest-pain category", ylabel=short["thalach"])
     ax.set_title("Maximum heart rate by chest-pain category"); plot_style_axis(ax, numeric_x=False)
     save_matplotlib(fig, "p07_thalach_violin_by_cp.png")
     stats.append(("p07", "thalach_medians_by_cp", str(d.groupby("cp_label", sort=False).thalach.median().to_dict())))
@@ -663,14 +669,17 @@ def build_matplotlib_figures():
     sns.heatmap(corr, cmap="coolwarm", vmin=-1, vmax=1, annot=True, fmt=".2f", square=True,
                 cbar=True, annot_kws={"size": 9}, ax=ax)
     ax.set_title(f"Spearman correlation (observed rows only, n={len(observed_chol)})")
-    ax.tick_params(axis="both", labelsize=10); save_matplotlib(fig, "p08_spearman_heatmap.png")
+    ax.tick_params(axis="both", labelsize=10)
+    ax.tick_params(axis="x", labelrotation=38)
+    for tick in ax.get_xticklabels(): tick.set_ha("right")
+    save_matplotlib(fig, "p08_spearman_heatmap.png")
     stats.append(("p08", "rho_with_disease_observed_chol", str(corr["Disease target"].round(3).to_dict())))
 
     # p09 100% stacked bars for chest pain and sex.
     fig, axes_array = plt.subplots(1, 2, figsize=(8, 4.5))
-    for ax, column, order, title in ((axes_array[0], "cp_label", [cp_names[i] for i in range(1,5)], "By chest-pain category"),
-                                      (axes_array[1], "sex_label", ["Female", "Male"], "By sex")):
-        table = pd.crosstab(d[column], d["disease_label"], normalize="index").reindex(order)
+    for ax, column, category_order, title in ((axes_array[0], "cp_label", [cp_names[i] for i in range(1,5)], "By chest-pain category"),
+                                               (axes_array[1], "sex_label", ["Female", "Male"], "By sex")):
+        table = pd.crosstab(d[column], d["disease_label"], normalize="index").reindex(category_order)
         table = table.reindex(columns=["No disease", "Disease"], fill_value=0)
         table.plot(kind="bar", stacked=True, color=[palette["No disease"], palette["Disease"]], ax=ax)
         ax.set(title=title, xlabel="", ylabel="Share of patients"); ax.yaxis.set_major_formatter(mticker.PercentFormatter(1))
@@ -693,7 +702,7 @@ def build_matplotlib_figures():
     pair._legend.set_title("Disease status")
     for ax in pair.axes.flat:
         if ax is not None:
-            ax.tick_params(labelsize=7)
+            ax.tick_params(labelsize=9)
     save_matplotlib(pair.fig, "p11_pair_plot.png")
 
     # p12 KDE panels for heart rate and age.
@@ -747,40 +756,48 @@ def build_matplotlib_figures():
     for label,color in palette.items(): sns.kdeplot(data=d[d.disease_label.eq(label)],x="thalach",color=color,label=label,ax=ax)
     ax.set(xlabel=short["thalach"],ylabel="Density"); ax.legend(fontsize=7)
     ax=axs[1,1]; ax.scatter(xs,ys,s=8,color="#287DAA"); ax.set(xlabel="Oldpeak (0.5 units)",ylabel="Dots (10 patients each)")
-    for ax,label in zip(axs.flat,"abcd"): label_panel(ax,label); plot_style_axis(ax,numeric_x=ax is not axs[0,0],numeric_y=True)
+    for ax,label in zip(axs.flat,"abcd"):
+        label_panel(ax,label)
+        if ax is not axs[0,0]: plot_style_axis(ax,numeric_x=True,numeric_y=True)
     fig.tight_layout(); save_matplotlib(fig,"fig_A_univariate.png")
 
     # Composite fig_B: box, violin, stem text, stacked group bars.
     fig, axs = plt.subplots(2,2,figsize=(6.5,7.3))
-    sns.boxplot(data=d,x="disease_label",y="thalach",order=["No disease","Disease"],palette=palette,ax=axs[0,0]); axs[0,0].set(xlabel="Disease status",ylabel=short["thalach"])
-    sns.violinplot(data=d,x="cp_label",y="thalach",order=order,cut=0,color="#59A6C5",ax=axs[0,1]); axs[0,1].set(xlabel="Chest-pain category",ylabel=short["thalach"]); axs[0,1].tick_params(axis="x",rotation=25)
+    sns.boxplot(data=d,x="disease_label",y="thalach",hue="disease_label",hue_order=["No disease","Disease"],order=["No disease","Disease"],palette=palette,legend=False,ax=axs[0,0]); axs[0,0].set(xlabel="Disease status",ylabel=short["thalach"])
+    compact_cp = ["1 typical", "2 atyp.", "3 non-ang.", "4 asympt."]
+    sns.violinplot(data=d,x="cp_label",y="thalach",order=cp_order,cut=0,color="#59A6C5",ax=axs[0,1]); axs[0,1].set(xlabel="Chest-pain category",ylabel=short["thalach"]); axs[0,1].set_xticks(range(4),compact_cp,rotation=15,ha="right",fontsize=7)
     axs[1,0].axis("off"); axs[1,0].text(.02,.98,make_stem_text(sample_ages),family="DejaVu Sans Mono",fontsize=8,va="top",transform=axs[1,0].transAxes); axs[1,0].set_title("Age stem-and-leaf, n=80")
-    stacked = pd.crosstab(d.cp_label,d.disease_label,normalize="index").reindex(order).reindex(columns=["No disease","Disease"],fill_value=0)
-    stacked.plot(kind="bar",stacked=True,color=[palette["No disease"],palette["Disease"]],ax=axs[1,1]); axs[1,1].set(xlabel="Chest-pain category",ylabel="Patient share"); axs[1,1].yaxis.set_major_formatter(mticker.PercentFormatter(1)); axs[1,1].tick_params(axis="x",rotation=25)
-    for ax,label in zip(axs.flat,"abcd"): label_panel(ax,label); plot_style_axis(ax,numeric_x=False if ax in (axs[0,1],axs[1,1]) else True)
+    combined_order = cp_order + ["Female", "Male"]
+    group_rows = pd.concat([d.assign(plot_group=d.cp_label), d.assign(plot_group=d.sex_label)], ignore_index=True)
+    stacked = pd.crosstab(pd.Categorical(group_rows.plot_group,categories=combined_order),group_rows.disease_label,normalize="index").reindex(columns=["No disease","Disease"],fill_value=0)
+    stacked.plot(kind="bar",stacked=True,color=[palette["No disease"],palette["Disease"]],ax=axs[1,1]); axs[1,1].set(xlabel="CP category / sex",ylabel="Patient share",title="CP and sex stacked"); axs[1,1].yaxis.set_major_formatter(mticker.PercentFormatter(1)); axs[1,1].set_ylim(0,1.17); axs[1,1].set_xticks(range(6),["typical","atyp.","non-ang.","asympt.","Female","Male"],rotation=25,ha="right",fontsize=7); axs[1,1].legend(title=None,loc="upper right",bbox_to_anchor=(1,.99),fontsize=6,ncol=2,frameon=False)
+    for ax,label in zip(axs.flat,"abcd"): label_panel(ax,label); plot_style_axis(ax,numeric_x=False)
     fig.tight_layout(); save_matplotlib(fig,"fig_B_group_comparison.png")
 
     # Composite fig_C: scatter, pair excerpt, heatmap, parallel coordinates.
     fig, axs = plt.subplots(2,2,figsize=(6.5,7.3))
     sns.scatterplot(data=d,x="age",y="thalach",hue="disease_label",hue_order=["No disease","Disease"],palette=palette,s=10,alpha=.6,legend=False,ax=axs[0,0]); axs[0,0].set(xlabel="Age (years)",ylabel=short["thalach"])
     ax=axs[0,1]; sns.scatterplot(data=d.sample(min(250,len(d)),random_state=SEED),x="age",y="oldpeak",hue="disease_label",hue_order=["No disease","Disease"],palette=palette,s=8,alpha=.5,legend=False,ax=ax); ax.set(xlabel="Age (years)",ylabel="ST depression",title="Pair plot excerpt")
-    sns.heatmap(observed_chol[heat_cols].corr(method="spearman"),cmap="coolwarm",vmin=-1,vmax=1,annot=True,fmt=".2f",cbar=True,annot_kws={"size":6},ax=axs[1,0]); axs[1,0].tick_params(labelsize=6)
+    compact_corr = observed_chol[heat_cols].corr(method="spearman")
+    compact_labels = ["Age", "BP", "Chol", "HR", "ST", "Disease"]
+    compact_corr.index = compact_labels; compact_corr.columns = compact_labels
+    sns.heatmap(compact_corr,cmap="coolwarm",vmin=-1,vmax=1,annot=True,fmt=".2f",cbar=True,annot_kws={"size":7},ax=axs[1,0]); axs[1,0].set_title(f"Spearman, observed only, n={len(observed_chol)}"); axs[1,0].tick_params(labelsize=9,axis="y"); axs[1,0].tick_params(labelsize=8,axis="x",rotation=35)
     ax=axs[1,1]
     for label,color in palette.items():
         subset=scaled.loc[parallel_rows.disease_label.eq(label)]
         for row in subset.to_numpy(): ax.plot(range(len(parallel_cols)),row,color=color,alpha=.1,linewidth=.5)
     ax.set_xticks(range(len(parallel_cols)),["Age","BP","Chol","HR","Oldpeak"],rotation=30,ha="right"); ax.set(xlabel="Feature",ylabel="Scaled 0-1"); ax.set_ylim(0,1)
-    for ax,label in zip(axs.flat,"abcd"): label_panel(ax,label); plot_style_axis(ax,numeric_x=ax is not axs[1,1])
+    for ax,label in zip(axs.flat,"abcd"): label_panel(ax,label); plot_style_axis(ax,numeric_x=ax in (axs[0,0],axs[0,1]),numeric_y=ax is not axs[1,0])
     fig.tight_layout(); save_matplotlib(fig,"fig_C_relations.png")
 
     # Composite fig_D: source counts and missingness panels.
     fig, axs = plt.subplots(2,2,figsize=(6.5,7.3))
     sns.countplot(data=d,x="source_label",hue="disease_label",hue_order=["No disease","Disease"],palette=palette,ax=axs[0,0]); axs[0,0].set(xlabel="Source",ylabel="Patients",title="Counts by source"); axs[0,0].tick_params(axis="x",rotation=25)
-    sns.barplot(data=missing,x="feature",y="missing_percent",hue="source_label",ax=axs[0,1],legend=False); axs[0,1].set(xlabel="Feature",ylabel="Missing (%)",title="Missingness by source"); axs[0,1].tick_params(axis="x",rotation=75,labelsize=6)
+    sns.barplot(data=missing,x="feature",y="missing_percent",hue="source_label",ax=axs[0,1],legend=False); axs[0,1].set(xlabel="Feature",ylabel="Missing (%)",title="Missingness by source"); axs[0,1].tick_params(axis="x",rotation=75,labelsize=9)
     by_source = d.groupby(["source_label","disease_label"]).size().unstack(fill_value=0).reindex(columns=["No disease","Disease"])
     by_source.plot(kind="bar",stacked=True,color=[palette["No disease"],palette["Disease"]],ax=axs[1,0]); axs[1,0].set(xlabel="Source",ylabel="Patients",title="Stacked disease counts"); axs[1,0].tick_params(axis="x",rotation=25)
     overall_missing=raw[fields].isna().mean().mul(100).sort_values(ascending=False)
-    sns.barplot(x=overall_missing.index,y=overall_missing.values,color="#59A6C5",ax=axs[1,1]); axs[1,1].set(xlabel="Feature",ylabel="Missing (%)",title="Overall missingness"); axs[1,1].tick_params(axis="x",rotation=75,labelsize=6)
+    sns.barplot(x=overall_missing.index,y=overall_missing.values,color="#59A6C5",ax=axs[1,1]); axs[1,1].set(xlabel="Feature",ylabel="Missing (%)",title="Overall missingness"); axs[1,1].tick_params(axis="x",rotation=75,labelsize=9)
     for ax,label in zip(axs.flat,"abcd"): label_panel(ax,label); plot_style_axis(ax,numeric_x=False)
     fig.tight_layout(); save_matplotlib(fig,"fig_D_source_missingness.png")
 

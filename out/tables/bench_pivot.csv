@@ -1,0 +1,5 @@
+N,kmeans_sklearn_s,kmeans_spark_s,dic_numpy_s,dic_spark_s,dic_python_scratch_s,kmeans_speedup_spark_vs_sklearn,dic_speedup_spark_vs_numpy,dic_speedup_python_vs_numpy,dic_speedup_python_vs_spark
+918,0.007,1.402,0.009,0.093,0.035,0.005,0.101,0.269,2.651
+100000,0.019,1.639,0.034,0.082,3.776,0.011,0.419,0.009,0.022
+1000000,0.250,8.703,0.242,0.727,37.544,0.029,0.333,0.006,0.019
+10000000,,,,,,,,,

@@ -1,0 +1,11 @@
+antecedent,consequent,support,confidence,lift
+cp=atypical_angina,"disease=no,exang=no",0.154,0.815,2.108
+"cp=asymptomatic,disease=yes,slope=flat",exang=yes,0.174,0.751,2.052
+"cp=asymptomatic,disease=yes,sex=M,slope=flat",exang=yes,0.151,0.747,2.042
+"cp=asymptomatic,sex=M,slope=flat",exang=yes,0.161,0.736,2.012
+"cp=atypical_angina,exang=no",disease=no,0.154,0.898,2.011
+"cp=asymptomatic,slope=flat",exang=yes,0.192,0.727,1.987
+"cp=asymptomatic,disease=yes,thalach=low",exang=yes,0.153,0.718,1.962
+cp=atypical_angina,disease=no,0.162,0.861,1.928
+"exang=yes,sex=M,slope=flat","cp=asymptomatic,disease=yes",0.151,0.794,1.860
+"exang=yes,thalach=low","cp=asymptomatic,disease=yes",0.153,0.782,1.832
