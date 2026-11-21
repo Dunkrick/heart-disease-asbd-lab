@@ -81,7 +81,7 @@ def main():
     plt.figure(); plt.plot(ks, cv_scores, marker="o"); plt.xlabel("k"); plt.ylabel("5-fold CV accuracy"); plt.title("KNN cross-validation accuracy"); plt.tight_layout(); plt.savefig(out / "figs/knn_cv.png", dpi=300); plt.close()
     primary, cm, yt, probs = save_metrics(KNeighborsClassifier(n_neighbors=best_k), xtr, xte, ytr, yte, "selected")
     primary["best_k"] = best_k
-    plt.figure(); ConfusionMatrixDisplay(cm).plot(cmap="Blues", values_format="d"); plt.title("KNN confusion matrix"); plt.tight_layout(); plt.savefig(out / "figs/knn_confusion.png", dpi=300); plt.close()
+    plt.figure(); ConfusionMatrixDisplay(cm, display_labels=["No disease", "Disease"]).plot(cmap="Blues", values_format="d"); plt.title("KNN confusion matrix"); plt.tight_layout(); plt.savefig(out / "figs/knn_confusion.png", dpi=300); plt.close()
     fpr, tpr, _ = roc_curve(yt, probs); plt.figure(); plt.plot(fpr, tpr); plt.plot([0, 1], [0, 1], "--"); plt.xlabel("False positive rate"); plt.ylabel("True positive rate"); plt.title("KNN ROC curve"); plt.tight_layout(); plt.savefig(out / "figs/knn_roc.png", dpi=300); plt.close()
     full = pd.read_csv(ROOT / "data/model_matrix.csv"); xf = full.drop(columns="y").to_numpy(float); yf = full.y.to_numpy(int)
     ftr, fte, fytr, fyte = train_test_split(xf, yf, test_size=.2, stratify=yf, random_state=SEED)
@@ -123,7 +123,15 @@ def main():
     tree_rules_path.write_text(tree_rules + "\n", encoding="utf-8")
     tree_accuracy = accuracy_score(yte, tree.predict(xte))
     print("EXTRA tree_test_accuracy", tree_accuracy)
-    fig, ax = plt.subplots(figsize=(18, 9)); plot_tree(tree, feature_names=list(selected.drop(columns="y").columns), class_names=["no", "yes"], filled=True, rounded=True, ax=ax)
+    tree_name_map = {"X_age": "Age (years)", "X_thalach": "Max heart rate (bpm)", "X_oldpeak": "ST depression",
+                     "X_sex__0": "Sex: female", "X_sex__1": "Sex: male", "X_cp__1": "Chest pain: typical",
+                     "X_cp__2": "Chest pain: atypical", "X_cp__3": "Chest pain: non-anginal",
+                     "X_cp__4": "Chest pain: asymptomatic", "X_exang__0": "Exercise angina: no",
+                     "X_exang__1": "Exercise angina: yes", "X_slope__-1": "ST slope: missing",
+                     "X_slope__1": "ST slope: upsloping", "X_slope__2": "ST slope: flat",
+                     "X_slope__3": "ST slope: downsloping"}
+    figure_names = [tree_name_map.get(name, name) for name in selected.drop(columns="y").columns]
+    fig, ax = plt.subplots(figsize=(18, 9)); plot_tree(tree, feature_names=figure_names, class_names=["No disease", "Disease"], filled=True, rounded=True, ax=ax)
     ax.set_title("Decision tree, max depth 3"); fig.tight_layout(); fig.savefig(out / "figs/tree.png", dpi=300); plt.close(fig)
     inertias=[]; silhouettes=[]
     for k in range(2, 9):

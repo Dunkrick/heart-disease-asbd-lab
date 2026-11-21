@@ -327,13 +327,12 @@ def kernel_density(values, points, bandwidth):
 
 def draw_violin(rows, stats):
     """Render KDE violins of thalach by cp; rows supply data and stats records group medians."""
-    image = chart("thalach violin by cp", "chest pain code", "maximum heart rate")
+    image = chart("thalach violin by cp", "", "maximum heart rate")
     box = (150, 170, 1320, 780)
     category_labels = ["1 typical", "2 atypical", "3 non-anginal", "4 asymptomatic"]
-    center_fraction = 140 / (box[2] - box[0])
-    span_fraction = (box[2] - box[0] - 280) / (box[2] - box[0])
-    axes(image, box, [(center_fraction + i * span_fraction / 3, category_labels[i]) for i in range(4)],
-         [(i / 5, 60 + i * 32) for i in range(6)])
+    panel_width = (box[2] - box[0]) / 4
+    x_ticks = [((i + 0.5) / 4, category_labels[i]) for i in range(4)]
+    axes(image, box, x_ticks, [(i / 5, 60 + i * 32) for i in range(6)])
     points = [float(v) for v in range(60, 221, 2)]
     group_medians = []
     for cp in range(1, 5):
@@ -341,13 +340,16 @@ def draw_violin(rows, stats):
         bandwidth = max(2.0, 1.06 * statistics.pstdev(vals) * len(vals) ** (-.2))
         density = kernel_density(vals, points, bandwidth)
         max_density = max(density)
-        center = int(scale(cp - 1, 0, 3, box[0] + 140, box[2] - 140))
+        center = int(box[0] + (cp - 1 + 0.5) * panel_width)
         for index, point in enumerate(points):
             half_width = max(1, int(65 * density[index] / max_density))
             yy = int(scale(point, 60, 220, box[3], box[1]))
             image.line(center - half_width, yy, center + half_width, yy, PALETTE[(cp - 1) % len(PALETTE)])
         group_medians.append(statistics.median(vals))
     stats.append(("p07", "thalach_median_by_cp_1_to_4", ", ".join(f"{value:g}" for value in group_medians)))
+    xlabel = "CHEST PAIN CODE"
+    box_center = (box[0] + box[2]) // 2
+    image.text(box_center - len(xlabel) * 6, image.height - 68, xlabel, color=INK, scale=2)
     save(image, "p07_thalach_violin_by_cp.png")
 
 
@@ -357,7 +359,7 @@ def draw_heatmap(rows, stats, observed_n):
     data = {column: [int(row[column]) if column == "num_bin" else float(row[column]) for row in rows]
             for column in columns}
     matrix = [[spearman(data[a], data[b]) for b in columns] for a in columns]
-    image = chart(f"Spearman heatmap - observed rows only, n={observed_n}", "numeric feature", "numeric feature", 2100, 1800)
+    image = chart(f"Spearman heatmap - observed rows only, n={observed_n}", "", "numeric feature", 2100, 1800)
     left, top, cell = 500, 350, 220
     for index, column in enumerate(columns):
         image.text(left + index * cell + 18, top - 45, column.upper(), color=INK, scale=2)
@@ -372,6 +374,8 @@ def draw_heatmap(rows, stats, observed_n):
             image.text(x0 + 25, y0 + 52, f"{rho:.2f}", color=INK, scale=2)
     pairs = [("age", "num_bin"), ("trestbps", "num_bin"), ("chol", "num_bin"), ("thalach", "num_bin"), ("oldpeak", "num_bin")]
     stats.append(("p08", "spearman_with_num_bin", ", ".join(f"{a}:{spearman(data[a], data[b]):.4f}" for a, b in pairs)))
+    xlabel = "NUMERIC FEATURE"
+    image.text(image.width // 2 - len(xlabel) * 6, image.height - 68, xlabel, color=INK, scale=2)
     save(image, "p08_spearman_heatmap.png")
 
 
@@ -508,7 +512,7 @@ def draw_parallel(rows, flags, stats):
     """Render 200 sampled min-max parallel profiles; rows are observed-chol cases, flags select completeness."""
     sample = random.Random(SEED).sample(rows, min(200, len(rows)))
     image = chart(f"parallel coordinates - observed rows only, n={len(rows)}; sample={len(sample)}",
-                  "numeric feature", "min-max scaled value", 1700, 1000)
+                  "", "min-max scaled value", 1700, 1000)
     box = (150, 190, 1510, 780)
     axes(image, box, [(i / (len(NUMERIC) - 1), NUMERIC[i]) for i in range(len(NUMERIC))],
          [(i / 5, f"{i/5:.1f}") for i in range(6)])
@@ -528,6 +532,8 @@ def draw_parallel(rows, flags, stats):
     legend(image, [("num_bin=0", BLUE), ("num_bin=1", RED)], 1300, 820)
     labels = [int(row["num_bin"]) for row in sample]
     stats.append(("p13", "sample200_class_counts_scaled_min_max", f"{len(sample)}, {labels.count(0)}, {labels.count(1)}, 0, 1"))
+    xlabel = "NUMERIC FEATURE"
+    image.text(image.width // 2 - len(xlabel) * 6, image.height - 68, xlabel, color=INK, scale=2)
     save(image, "p13_parallel_coordinates.png")
 
 
@@ -601,9 +607,9 @@ def build_matplotlib_figures():
     # p01 pie: multiclass target with count and percentage labels.
     counts = d["num"].value_counts().sort_index()
     fig, ax = plt.subplots(figsize=(6.5, 4.5))
-    labels = [f"num={level} (n={count})" for level, count in counts.items()]
+    labels = [f"Level {level} (n={count})" for level, count in counts.items()]
     ax.pie(counts.values, labels=labels, autopct="%1.1f%%", startangle=90, textprops={"fontsize": 9})
-    ax.set_title("Disease severity distribution (num 0-4)")
+    ax.set_title("Disease severity distribution (levels 0-4)")
     save_matplotlib(fig, "p01_num_pie.png")
     stats.append(("p01", "num_counts", ", ".join(str(int(v)) for v in counts.values)))
 
@@ -611,6 +617,7 @@ def build_matplotlib_figures():
     fig, ax = plt.subplots(figsize=(6.5, 4.5))
     sns.histplot(data=d, x="age", hue="disease_label", hue_order=["No disease", "Disease"],
                  palette=palette, bins=18, element="step", stat="count", common_norm=False, ax=ax)
+    ax.get_legend().set_title("Disease status")
     ax.set(xlabel=short["age"], ylabel="Patients"); ax.set_title("Age by disease target")
     plot_style_axis(ax); save_matplotlib(fig, "p02_age_histogram.png")
     stats.append(("p02", "age_medians_by_disease", str(d.groupby("disease_label").age.median().to_dict())))
@@ -626,7 +633,7 @@ def build_matplotlib_figures():
         ax.annotate(f"n={int(count)}", (value, dots + .3), ha="center", fontsize=7)
     ax.scatter(xs, ys, s=20, color="#287DAA", alpha=.85)
     ax.set(xlabel="ST depression (rounded to 0.5)", ylabel="Dots (10 patients each)")
-    ax.set_title("Oldpeak dot plot"); plot_style_axis(ax); save_matplotlib(fig, "p03_oldpeak_dotplot.png")
+    ax.set_title("ST depression dot plot"); plot_style_axis(ax); save_matplotlib(fig, "p03_oldpeak_dotplot.png")
     stats.append(("p03", "oldpeak_counts_rounded_0.5", str({float(k): int(v) for k, v in dot_counts.items()})))
 
     # p04 stem-and-leaf image, fixed random sample of 80.
@@ -641,6 +648,7 @@ def build_matplotlib_figures():
     fig, ax = plt.subplots(figsize=(6.5, 4.5))
     sns.scatterplot(data=d, x="age", y="thalach", hue="disease_label", hue_order=["No disease", "Disease"],
                     palette=palette, alpha=.65, s=28, ax=ax)
+    ax.get_legend().set_title("Disease status")
     ax.set(xlabel=short["age"], ylabel=short["thalach"]); ax.set_title("Age vs. maximum heart rate")
     plot_style_axis(ax); save_matplotlib(fig, "p05_age_thalach_scatter.png")
 
@@ -691,12 +699,15 @@ def build_matplotlib_figures():
     fig, ax = plt.subplots(figsize=(6.5, 4.5))
     sns.countplot(data=d, x="source_label", hue="disease_label", hue_order=["No disease", "Disease"],
                   palette=palette, ax=ax)
+    ax.get_legend().set_title("Disease status")
     ax.set(xlabel="Data source", ylabel="Patients"); ax.set_title("Disease target counts by source")
     ax.tick_params(axis="x", rotation=15); plot_style_axis(ax, numeric_x=False)
     save_matplotlib(fig, "p10_num_bin_by_source.png")
 
     # p11 pair plot with visible class legend.
-    pair = sns.pairplot(d[PAIR_FEATURES + ["disease_label"]], hue="disease_label", hue_order=["No disease", "Disease"],
+    pair_data = d[PAIR_FEATURES + ["disease_label"]].rename(columns={"age":"Age (years)", "thalach":"Max heart rate (bpm)",
+        "oldpeak":"ST depression", "trestbps":"Resting blood pressure (mmHg)"})
+    pair = sns.pairplot(pair_data, hue="disease_label", hue_order=["No disease", "Disease"],
                         palette=palette, corner=True, diag_kind="kde", plot_kws={"s": 16, "alpha": .55}, height=1.65)
     pair.fig.suptitle("Pair plot by disease status", y=1.02)
     pair._legend.set_title("Disease status")
@@ -710,6 +721,7 @@ def build_matplotlib_figures():
     for ax, column in zip(axes_array, ["thalach", "age"]):
         sns.kdeplot(data=d, x=column, hue="disease_label", hue_order=["No disease", "Disease"],
                     palette=palette, fill=False, common_norm=False, ax=ax)
+        ax.get_legend().set_title("Disease status")
         ax.set(xlabel=short[column], ylabel="Density", title=short[column]); plot_style_axis(ax)
     fig.suptitle("KDE by disease status"); save_matplotlib(fig, "p12_kde_age_thalach.png")
 
@@ -731,8 +743,14 @@ def build_matplotlib_figures():
     fields = [column for column in raw.columns if column != "source"]
     missing = raw.groupby("source")[fields].apply(lambda group: group.isna().mean().mul(100)).reset_index().melt("source", var_name="feature", value_name="missing_percent")
     missing["source_label"] = missing.source.map(source_names)
+    feature_names = {"age":"Age", "sex":"Sex", "cp":"Chest-pain category", "trestbps":"Resting blood pressure",
+                     "chol":"Cholesterol", "fbs":"Fasting blood sugar", "restecg":"Resting ECG",
+                     "thalach":"Max heart rate", "exang":"Exercise-induced angina", "oldpeak":"ST depression",
+                     "slope":"ST slope", "ca":"Coronary vessel count", "thal":"Thal test", "num":"Disease severity"}
+    missing["feature"] = missing.feature.map(feature_names)
     fig, ax = plt.subplots(figsize=(9, 5))
     sns.barplot(data=missing, x="feature", y="missing_percent", hue="source_label", ax=ax)
+    ax.get_legend().set_title("Cohort")
     ax.set(xlabel="Feature", ylabel="Missing values (%)", title="Missingness by source")
     ax.tick_params(axis="x", rotation=45); plot_style_axis(ax, numeric_x=False); save_matplotlib(fig, "missingness_bar.png")
 
@@ -750,12 +768,12 @@ def build_matplotlib_figures():
 
     # Composite fig_A: pie, histogram, KDE, and dot plot.
     fig, axs = plt.subplots(2, 2, figsize=(6.5, 7.3))
-    ax=axs[0,0]; ax.pie(counts.values, autopct="%1.0f%%", startangle=90); ax.set_title("num distribution")
-    ax=axs[0,1]; sns.histplot(data=d,x="age",hue="disease_label",hue_order=["No disease","Disease"],palette=palette,element="step",ax=ax); ax.set(xlabel="Age (years)",ylabel="Patients")
+    ax=axs[0,0]; ax.pie(counts.values, labels=[f"Level {level}" for level in counts.index], autopct="%1.0f%%", startangle=90, textprops={"fontsize":6}); ax.set_title("Disease severity")
+    ax=axs[0,1]; sns.histplot(data=d,x="age",hue="disease_label",hue_order=["No disease","Disease"],palette=palette,element="step",ax=ax); ax.set(xlabel="Age (years)",ylabel="Patients"); ax.get_legend().set_title("Disease status")
     ax=axs[1,0]
     for label,color in palette.items(): sns.kdeplot(data=d[d.disease_label.eq(label)],x="thalach",color=color,label=label,ax=ax)
     ax.set(xlabel=short["thalach"],ylabel="Density"); ax.legend(fontsize=7)
-    ax=axs[1,1]; ax.scatter(xs,ys,s=8,color="#287DAA"); ax.set(xlabel="Oldpeak (0.5 units)",ylabel="Dots (10 patients each)")
+    ax=axs[1,1]; ax.scatter(xs,ys,s=8,color="#287DAA"); ax.set(xlabel="ST depression (0.5 units)",ylabel="Dots (10 patients each)")
     for ax,label in zip(axs.flat,"abcd"):
         label_panel(ax,label)
         if ax is not axs[0,0]: plot_style_axis(ax,numeric_x=True,numeric_y=True)
@@ -792,11 +810,12 @@ def build_matplotlib_figures():
 
     # Composite fig_D: source counts and missingness panels.
     fig, axs = plt.subplots(2,2,figsize=(6.5,7.3))
-    sns.countplot(data=d,x="source_label",hue="disease_label",hue_order=["No disease","Disease"],palette=palette,ax=axs[0,0]); axs[0,0].set(xlabel="Source",ylabel="Patients",title="Counts by source"); axs[0,0].tick_params(axis="x",rotation=25)
+    sns.countplot(data=d,x="source_label",hue="disease_label",hue_order=["No disease","Disease"],palette=palette,ax=axs[0,0]); axs[0,0].set(xlabel="Source",ylabel="Patients",title="Counts by source"); axs[0,0].tick_params(axis="x",rotation=25); axs[0,0].get_legend().set_title("Disease status")
     sns.barplot(data=missing,x="feature",y="missing_percent",hue="source_label",ax=axs[0,1],legend=False); axs[0,1].set(xlabel="Feature",ylabel="Missing (%)",title="Missingness by source"); axs[0,1].tick_params(axis="x",rotation=75,labelsize=9)
     by_source = d.groupby(["source_label","disease_label"]).size().unstack(fill_value=0).reindex(columns=["No disease","Disease"])
-    by_source.plot(kind="bar",stacked=True,color=[palette["No disease"],palette["Disease"]],ax=axs[1,0]); axs[1,0].set(xlabel="Source",ylabel="Patients",title="Stacked disease counts"); axs[1,0].tick_params(axis="x",rotation=25)
+    by_source.plot(kind="bar",stacked=True,color=[palette["No disease"],palette["Disease"]],ax=axs[1,0]); axs[1,0].set(xlabel="Source",ylabel="Patients",title="Stacked disease counts"); axs[1,0].tick_params(axis="x",rotation=25); axs[1,0].legend(title="Disease status")
     overall_missing=raw[fields].isna().mean().mul(100).sort_values(ascending=False)
+    overall_missing.index = [feature_names.get(value, value) for value in overall_missing.index]
     sns.barplot(x=overall_missing.index,y=overall_missing.values,color="#59A6C5",ax=axs[1,1]); axs[1,1].set(xlabel="Feature",ylabel="Missing (%)",title="Overall missingness"); axs[1,1].tick_params(axis="x",rotation=75,labelsize=9)
     for ax,label in zip(axs.flat,"abcd"): label_panel(ax,label); plot_style_axis(ax,numeric_x=False)
     fig.tight_layout(); save_matplotlib(fig,"fig_D_source_missingness.png")
@@ -806,9 +825,21 @@ def build_matplotlib_figures():
     print(f"Matplotlib/Seaborn figures written: 13 individual plots + 4 composites + missingness + before/after; dpi=300; font=DejaVu Sans")
 
 
+def build_scratch_p07_p08_p13():
+    """Build raster p07, p08, and p13 figures."""
+    rows = load_rows(DATA / "clean.csv")
+    flags = load_rows(DATA / "imputed_flags.csv")
+    stats = []
+    draw_violin(rows, stats)
+    observed_chol = [row for row, flag in zip(rows, flags) if flag["chol_imputed"] == "False"]
+    draw_heatmap(observed_chol, stats, len(observed_chol))
+    draw_parallel(observed_chol, flags, stats)
+
+
 def main():
     """Run Matplotlib/Seaborn figure generation; project root and artifact paths define inputs."""
     build_matplotlib_figures()
+    build_scratch_p07_p08_p13()
 
 
 if __name__ == "__main__":

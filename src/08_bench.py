@@ -196,7 +196,10 @@ def main():
     (ROOT/"out/tables").mkdir(parents=True,exist_ok=True); (ROOT/"out/figs").mkdir(parents=True,exist_ok=True)
     frame.to_csv(ROOT/"out/tables/bench.csv",index=False)
     fig,ax=plt.subplots();
-    for (task,engine),part in frame.groupby(["task","engine"]): ax.loglog(part.N,part.mean_s,marker="o",label=f"{task}/{engine}")
+    engine_labels={"sklearn":"scikit-learn","spark":"Spark","numpy":"NumPy","python_scratch":"Python (scratch)"}
+    for (task,engine),part in frame.groupby(["task","engine"]):
+        task_label="K-means" if task=="kmeans" else task
+        ax.loglog(part.N,part.mean_s,marker="o",label=f"{task_label} / {engine_labels.get(engine,engine)}")
     ax.set(xlabel="N rows",ylabel="Mean fit/count seconds",title="Benchmark runtime"); ax.legend(); fig.tight_layout(); fig.savefig(ROOT/"out/figs/bench.png",dpi=300); plt.close(fig)
     spark.stop(); print(frame[["task","N","engine","mean_s","speedup","speedup_vs_numpy","speedup_vs_spark","speedup_vs_sklearn","status","sanity_mean"]].to_string(index=False))
 
